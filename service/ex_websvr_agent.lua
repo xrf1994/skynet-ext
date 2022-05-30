@@ -30,10 +30,8 @@ end
 function CMD.start(execute, domains)
     if execute then
         _execute = require(execute)
-        _execute.init()
     else
         _execute = {
-            init = function() end,
             check_request = function(request)
                 return 200
             end,
@@ -109,7 +107,7 @@ function CMD.attach(fd, addr)
                 end,
             }
 
-            local check_code, err = _execute.check_request(request)
+            local check_code, err = _execute.check_request(request, response)
             if check_code ~= 200 then
                 response.code = check_code
                 response:resp(err)
@@ -143,6 +141,11 @@ end
 skynet.start(function()
     skynet.timeout(500, check_fds)
     skynet.dispatch("lua", function(session, source, cmd, ...)
-        return skynet.retpack(CMD[cmd](...))
+        local fn = CMD[cmd]
+        if not fn then
+            fn = _execute[cmd]
+        end
+        assert(fn, cmd)
+        return skynet.retpack(fn(...))
     end)
 end)

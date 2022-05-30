@@ -103,7 +103,7 @@ function CMD.create_table(name, fields, prikey, comment)
         table.insert(sql, fs)
     end
     if prikey then
-        table.insert(sql, string.format("PRIMARY KEY (`%s`)", prikey))
+        table.insert(sql, string.format("PRIMARY KEY (%s)", prikey))
     end
     table.insert(sql, string.format(") COMMENT \"%s\";", comment or ""))
     local sqltr = table.concat(sql, "\n")

@@ -5,9 +5,9 @@
 local skynet = require 'skynet.manager'
 local socket = require "skynet.socket"
 
-local CMD = {}
+local M = {}
 
-function CMD.start(config)
+function M.start(config)
     local host = config.host or "127.0.0.1"
     local port = config.port or 8080
     local agent_num = config.agent_num or 1
@@ -32,11 +32,10 @@ function CMD.start(config)
         end
     end)
 
+
     skynet.error("websvr:", config.name, host, port, agent_num, execute)
+    return agents
 end
 
-skynet.start(function()
-    skynet.dispatch("lua", function(session, source, cmd, ...)
-        return skynet.retpack(CMD[cmd](...))
-    end)
-end)
+
+return M

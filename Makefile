@@ -5,7 +5,7 @@ INCLUDE = -I$(SKYNET)/3rd/lua -I$(SKYNET)/skynet-src
 
 .PHONY: all
 
-all: log luaclib cservice \
+all: luaclib cservice \
 	luaclib/cjson.so \
 	luaclib/skiplist.so \
 	luaclib/protobuf.so \
