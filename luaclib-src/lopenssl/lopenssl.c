@@ -121,7 +121,7 @@ static int lhmac_sha256(lua_State * L){
     return 1;
 }
 
-int luaopen_lssl_c(lua_State *L) {
+int luaopen_lopenssl_c(lua_State *L) {
     luaL_checkversion(L);
 
     luaL_Reg l[] = {
