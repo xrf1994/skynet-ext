@@ -70,6 +70,7 @@ function CMD.attach(fd, addr)
                 header = header,
                 code = code,
                 body = body,
+                addr = addr,
                 get_cookies = function(self)
                     local cookie = self.header["cookie"]
                     if not cookie then

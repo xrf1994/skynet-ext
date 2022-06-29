@@ -4,14 +4,19 @@
 
 local skynet = require 'skynet.manager'
 local socket = require "skynet.socket"
+local ex_log = require "ex_log"
 
 local M = {}
 
-function M.start(config)
-    local host = config.host or "127.0.0.1"
-    local port = config.port or 8080
-    local agent_num = config.agent_num or 1
-    local execute = config.execute
+local host, port
+local sname, agent_num, execute
+
+function M.init(config)
+    host = config.host or "127.0.0.1"
+    port = config.port or 8080
+    sname = config.name
+    agent_num = config.agent_num or 1
+    execute = config.execute
     local domains = config.domains
 
     local agents = {}
@@ -21,6 +26,11 @@ function M.start(config)
         table.insert(agents, svr)
     end
 
+    return agents
+end
+
+
+function M.start(agents)
     local web_order = 1
     local listen = socket.listen(host, port)
     socket.start(listen, function(fd, addr)
@@ -31,11 +41,7 @@ function M.start(config)
             web_order = 1
         end
     end)
-
-
-    skynet.error("websvr:", config.name, host, port, agent_num, execute)
-    return agents
+    skynet.error("websvr start:", sname, host, port, agent_num, execute)
 end
-
 
 return M

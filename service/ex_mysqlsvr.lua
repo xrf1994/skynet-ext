@@ -94,17 +94,28 @@ local function db_heart()
     skynet.timeout(5000, db_heart)
 end
 
-function CMD.create_table(name, fields, prikey, comment)
+function CMD.create_table(name, fields, prikey, index, comment)
     local sql = {}
     table.insert(sql, string.format("CREATE TABLE IF NOT EXISTS `%s` (", name))
+
+    local body = {}
     for k, v in ipairs(fields) do
-        local fs = string.format("`%s` %s %s NULL %s COMMENT \"%s\",",
+        local fs = string.format("`%s` %s %s NULL %s COMMENT \"%s\"",
                                     v.name, v.type, v.null or "", v.extra or "", v.comment or "")
-        table.insert(sql, fs)
+        table.insert(body, fs)
     end
     if prikey then
-        table.insert(sql, string.format("PRIMARY KEY (%s)", prikey))
+        table.insert(body, string.format("PRIMARY KEY (%s)", prikey))
     end
+    if index then
+        for i, v in ipairs(index) do
+            table.insert(body,
+                string.format("INDEX `%s`(`%s`) USING %s",
+                v.name, v.name, v.method))
+        end
+    end
+    table.insert(sql, table.concat(body, ",\n"))
+
     table.insert(sql, string.format(") COMMENT \"%s\";", comment or ""))
     local sqltr = table.concat(sql, "\n")
     skynet.error("create table:\n", sqltr)
@@ -192,6 +203,25 @@ local function check_fields(table_name, fields)
     end
 end
 
+local function check_index(tn, index)
+    local sql = string.format("show index from `%s`", tn)
+    local res = _db:query(sql)
+
+    local cur_index = {}
+    for i, v in ipairs(res) do
+        cur_index[v.Column_name] = v
+    end
+    for i, v in ipairs(index) do
+        if not cur_index[v.name] then
+            local sql = [[ALTER TABLE `%s` ADD INDEX `%s`(`%s`) USING %s]]
+            sql = string.format(sql, tn, v.name, v.name, v.method)
+            ex_log.info(sql)
+            local res = _db:query(sql)
+            assert(not res.err, res.err)
+        end
+    end
+end
+
 function CMD.check_tables(registers)
     local query_tables = _db:query("show tables;")
     local cur_tables = {}
@@ -219,7 +249,7 @@ function CMD.check_tables(registers)
     end
 
     for k, v in pairs(creates) do
-        local err, res = CMD.create_table(k, v.fields, v.prikey, v.comment)
+        local err, res = CMD.create_table(k, v.fields, v.prikey, v.index, v.comment)
         assert(not err, err)
     end
 
@@ -234,6 +264,9 @@ function CMD.check_tables(registers)
         check_fields(k, v.fields)
     end
 
+    for k, v in pairs(registers) do
+        if v.index then check_index(k, v.index) end
+    end
 end
 
 function CMD.query(sql)
@@ -249,7 +282,7 @@ function CMD.select(tname, fields, where, limit)
         "SELECT",
         table.concat(fields, ","),
         "FROM",
-        "`" .. tname .. "`",
+        tname
     }
 
     if where and next(where) then
@@ -423,7 +456,7 @@ function CMD.connect(config_, dbname_)
             end,
     }
     _dbname = dbname_
-    skynet.error("connecting mysql:", config.host, config.port, config.database)
+    ex_log.info("connecting mysql:", config_, dbname_)
     _db = mysql.connect(config)
 end
 
