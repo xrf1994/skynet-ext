@@ -249,7 +249,7 @@ function CMD.check_tables(registers)
     end
 
     for k, v in pairs(creates) do
-        local err, res = CMD.create_table(k, v.fields, v.prikey, v.index, v.comment)
+        local err, res = CMD.create_table(v.name, v.fields, v.prikey, v.index, v.comment)
         assert(not err, err)
     end
 
