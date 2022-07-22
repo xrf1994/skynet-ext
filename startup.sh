@@ -17,21 +17,27 @@ if [ -z $CONFIG ]; then
     CONFIG=config.lua
 fi
 
+PNAME=$4
+if [ -z $PNAME ]; then
+    PNAME=$(basename $CONFIG)
+fi
 
 TMP=$PATH
 PATH=$TMP
 ulimit -c unlimited
 
+mkdir -p run
+
 CUR_PATH=$PWD
-PID_FILE=$CONFIG.pid
-CONF_TEMP=$CONFIG.tmp
-DEBUG_CONF=$CONFIG.debug
+PID_FILE=run/$PNAME.pid
+CONF_TEMP=run/$PNAME.tmp
+DEBUG_CONF=run/$PNAME.debug
 
 function make_conf(){
     cat $CONFIG >> $CONF_TEMP
 
     echo "daemon='$PID_FILE'" >> $CONF_TEMP
-    echo "logger='log/$(basename $CONFIG).log'" >> $CONF_TEMP
+    echo "logger='log/$PNAME.log'" >> $CONF_TEMP
   }
 
 function start(){
@@ -40,9 +46,9 @@ function start(){
             make_conf
             $SKYNET/skynet $CONF_TEMP
             sleep 1
-            echo $CONFIG start with pid $(cat $PID_FILE)
+            echo $PNAME start with pid $(cat $PID_FILE)
             rm $CONF_TEMP
-            LOG="log/$(basename $CONFIG).log-$(date '+%Y%m%d')"
+            LOG="log/$PNAME.log-$(date '+%Y%m%d')"
             tail -n 50 -f $LOG
             ;;
         debug)
@@ -64,10 +70,10 @@ function stop(){
   pid=`cat $PID_FILE`
   exist_pid=`pgrep skynet | grep $pid`
   if [ -z "$exist_pid" ] ;then
-    echo "have no $CONFIG server"
+    echo "have no $PNAME server"
     exit 0
   else
-    echo -n $"$pid $CONFIG server will killed"
+    echo -n $"$pid $PNAME server will killed"
     kill $pid
     echo
   fi
