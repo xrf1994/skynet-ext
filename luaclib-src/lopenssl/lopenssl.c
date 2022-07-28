@@ -4,6 +4,10 @@
 #include <string.h>
 #include <openssl/aes.h>
 #include <openssl/sha.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/crypto.h>
+
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -121,6 +125,42 @@ static int lhmac_sha256(lua_State * L){
     return 1;
 }
 
+static int lsha256(lua_State * L){
+    size_t size = 0;
+    const char * data = luaL_checklstring(L, 1, &size);
+    SHA256_CTX ctx;
+    uint8_t digest[SHA256_DIGEST_LENGTH];
+    SHA256_Init(&ctx);
+    SHA256_Update(&ctx, data, size);
+    SHA256_Final(digest, &ctx);
+    lua_pushlstring(L, digest, SHA256_DIGEST_LENGTH);
+    return 1;
+}
+
+static int lrsa_sign(lua_State * L){
+    size_t pem_size = 0;
+    const char * pem = luaL_checklstring(L, 1, &pem_size);
+    size_t data_size = 0;
+    const char * data = luaL_checklstring(L, 2, &data_size);
+    BIO *bufio = NULL;
+    RSA *rsa = NULL;
+    bufio = BIO_new_mem_buf((void*)pem, pem_size);
+    rsa = PEM_read_bio_RSAPrivateKey(bufio, NULL, NULL, NULL);
+    if(!rsa) {
+        return luaL_error(L, "error pem");
+    }
+    uint8_t * out = malloc(RSA_size(rsa));
+    unsigned int out_size = 0;
+    int ret = RSA_sign(NID_sha256, data,  data_size, out, &out_size, rsa);
+    if(ret != 1){
+        free(out);
+        return luaL_error(L, "rsa sign error:%d",  ret);
+    }
+    lua_pushlstring(L, out, out_size);
+    free(out);
+    return 1;
+}
+
 int luaopen_lopenssl_c(lua_State *L) {
     luaL_checkversion(L);
 
@@ -128,6 +168,8 @@ int luaopen_lopenssl_c(lua_State *L) {
         {"aes_encode", laes_encode},
         {"aes_decode", laes_decode},
         {"hmac_sha256", lhmac_sha256},
+        {"sha256", lsha256 },
+        {"rsa_sign", lrsa_sign },
 
         {NULL, NULL}
     };

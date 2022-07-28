@@ -55,7 +55,7 @@ function start(){
             make_conf
             sed -e 's/daemon/--daemon/' $CONF_TEMP > $DEBUG_CONF
             rm $CONF_TEMP
-             $SKYNET/skynet $DEBUG_CONF
+            $SKYNET/skynet $DEBUG_CONF
         ;;
         *)
     esac
