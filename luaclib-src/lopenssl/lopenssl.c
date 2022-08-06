@@ -7,7 +7,7 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/crypto.h>
-
+#include <openssl/evp.h>
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -161,6 +161,41 @@ static int lrsa_sign(lua_State * L){
     return 1;
 }
 
+static int laes_gcm_decode(lua_State * L){
+    size_t data_len;
+    const char * data = luaL_checklstring(L, 1, &data_len);
+    size_t key_len;
+    const char * key = luaL_checklstring(L, 2, &key_len);
+    size_t aad_len;
+    const char * aad = luaL_checklstring(L, 3, &aad_len);
+    size_t iv_len;
+    const char * iv = luaL_checklstring(L, 4, &iv_len);
+
+    printf("data_len:%d\n", data_len);
+    if(data_len > 16){
+        data_len = data_len - 16;
+    }
+
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL);
+
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, iv_len, NULL);
+    EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv);
+
+    int outlen;
+    // EVP_DecryptUpdate(ctx, NULL, &outlen, aad, aad_len);
+    unsigned char * outbuf = malloc(data_len);
+    EVP_DecryptUpdate(ctx, outbuf, &outlen, data, data_len);
+    // Set expected tag value
+    // EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, 16, (void*)tag);
+    int final_len;
+    EVP_CIPHER_CTX_free(ctx);
+    lua_pushlstring(L, outbuf, outlen);
+    free(outbuf);
+    return 1;
+
+}
+
 int luaopen_lopenssl_c(lua_State *L) {
     luaL_checkversion(L);
 
@@ -170,6 +205,7 @@ int luaopen_lopenssl_c(lua_State *L) {
         {"hmac_sha256", lhmac_sha256},
         {"sha256", lsha256 },
         {"rsa_sign", lrsa_sign },
+        {"aes_gcm_decode", laes_gcm_decode},
 
         {NULL, NULL}
     };
