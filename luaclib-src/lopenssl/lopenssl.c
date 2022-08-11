@@ -171,26 +171,27 @@ static int laes_gcm_decode(lua_State * L){
     size_t iv_len;
     const char * iv = luaL_checklstring(L, 4, &iv_len);
 
-    printf("data_len:%d\n", data_len);
-    if(data_len > 16){
-        data_len = data_len - 16;
-    }
-
+    // if(data_len > 16){
+    //     data_len = data_len - 16;
+    // }
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-    EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL);
-
+    EVP_CIPHER_CTX_set_padding(ctx, 0);
     EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, iv_len, NULL);
-    EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv);
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, key, iv);
 
-    int outlen;
-    // EVP_DecryptUpdate(ctx, NULL, &outlen, aad, aad_len);
+    int out_len;
+    EVP_DecryptUpdate(ctx, NULL, &out_len, aad, aad_len);
     unsigned char * outbuf = malloc(data_len);
-    EVP_DecryptUpdate(ctx, outbuf, &outlen, data, data_len);
+    EVP_DecryptUpdate(ctx, outbuf, &out_len, data, data_len);
+    if(out_len > 16){ //remove 16b tag
+        out_len = out_len - 16;
+    }
     // Set expected tag value
     // EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, 16, (void*)tag);
-    int final_len;
+    // int rc = EVP_CipherFinal_ex(ctx, outbuf+out_len, &out_len);
+    // printf("rc: %d %d  %d\n", rc, data_len, out_len);
     EVP_CIPHER_CTX_free(ctx);
-    lua_pushlstring(L, outbuf, outlen);
+    lua_pushlstring(L, outbuf, out_len);
     free(outbuf);
     return 1;
 
