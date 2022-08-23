@@ -161,6 +161,37 @@ static int lrsa_sign(lua_State * L){
     return 1;
 }
 
+static int lrsa_verify(lua_State * L){
+    size_t pem_size = 0;
+    const char * pem = luaL_checklstring(L, 1, &pem_size);
+    size_t data_size = 0;
+    const char * data = luaL_checklstring(L, 2, &data_size);
+    size_t sign_size = 0;
+    const char * sign = luaL_checklstring(L, 3, &sign_size);
+    if(pem_size < 128){
+        return luaL_error(L, "error pem");
+    }
+
+    static const char * pkcs1_header = "-----BEGIN RSA PUBLIC KEY-----";
+	static const char * pkcs8_header = "-----BEGIN PUBLIC KEY-----";
+    BIO *bio = NULL;
+    RSA *rsa = NULL;
+    bio = BIO_new_mem_buf((void*)pem, pem_size);
+    if(strncmp(pem, pkcs1_header, 30) == 0){
+		rsa = PEM_read_bio_RSAPublicKey(bio,NULL,NULL,NULL);
+	}
+	else if(strncmp(pem, pkcs8_header, 26) == 0){
+		rsa = PEM_read_bio_RSA_PUBKEY(bio,NULL,NULL,NULL);
+	}
+    if(!rsa) {
+        return luaL_error(L, "error pem");
+    }
+    int ret = RSA_verify(NID_sha256, data, data_size, sign, &sign_size, rsa);
+    lua_pushboolean(L, ret);
+    return 1;
+}
+
+
 static int laes_gcm_decode(lua_State * L){
     size_t data_len;
     const char * data = luaL_checklstring(L, 1, &data_len);
@@ -206,6 +237,7 @@ int luaopen_lopenssl_c(lua_State *L) {
         {"hmac_sha256", lhmac_sha256},
         {"sha256", lsha256 },
         {"rsa_sign", lrsa_sign },
+        {"rsa_verify", lrsa_verify },
         {"aes_gcm_decode", laes_gcm_decode},
 
         {NULL, NULL}
