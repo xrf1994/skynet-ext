@@ -386,7 +386,7 @@ end
 function CMD.update(tname, fields, where, exc)
     local values = {}
     for k, v in pairs(fields) do
-        table.insert(values, string.format("%s=%s", TS(k), QS(v)))
+        table.insert(values, string.format("`%s`=%s", TS(k), QS(v)))
     end
 
     local sql = {
