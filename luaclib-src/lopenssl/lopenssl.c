@@ -228,6 +228,17 @@ static int laes_gcm_decode(lua_State * L){
 
 }
 
+static int lhash(lua_State * L){
+    size_t size;
+    const char * dat = luaL_checklstring(L, 1, &size);
+
+    uint32_t hash = 1315423911;
+    for(size_t i = 0; i < size; i++)
+        hash ^= ((hash << 5) + dat[i] + (hash >> 2));
+    lua_pushinteger(L, hash);
+    return 1;
+}
+
 int luaopen_lopenssl_c(lua_State *L) {
     luaL_checkversion(L);
 
@@ -239,6 +250,7 @@ int luaopen_lopenssl_c(lua_State *L) {
         {"rsa_sign", lrsa_sign },
         {"rsa_verify", lrsa_verify },
         {"aes_gcm_decode", laes_gcm_decode},
+        {"hash", lhash},
 
         {NULL, NULL}
     };
