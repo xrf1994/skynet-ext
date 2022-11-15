@@ -10,6 +10,7 @@ local CMD = {}
 local _fds = {}
 local _execute
 local _resp_headers = {}
+local MAX_READER = 65535
 
 local function send_response(fd, statuscode, header, body)
   local w = sockethelper.writefunc(fd)
@@ -27,7 +28,10 @@ local function copy_resp_header()
     return h
 end
 
-function CMD.start(execute, domains)
+function CMD.start(execute, domains, max_reader)
+    if max_reader then
+        MAX_READER = max_reader
+    end
     if execute then
         _execute = require(execute)
     else
@@ -53,7 +57,7 @@ function CMD.attach(fd, addr)
     local reader = sockethelper.readfunc(fd)
     skynet.fork(function()
         while _fds[fd] do
-            local code, url, method, header, body = httpd.read_request(reader)
+            local code, url, method, header, body = httpd.read_request(reader, MAX_READER)
             if not code then
                 _fds[fd] = nil
                 break

@@ -18,11 +18,12 @@ function M.init(config)
     agent_num = config.agent_num or 1
     execute = config.execute
     local domains = config.domains
+    local max_reader = tonumber(config.max_reader)
 
     local agents = {}
     for i = 1, agent_num do
         local svr = skynet.newservice("ex_websvr_agent")
-        skynet.call(svr, "lua", "start", execute, domains)
+        skynet.call(svr, "lua", "start", execute, domains, max_reader)
         table.insert(agents, svr)
     end
 
