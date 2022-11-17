@@ -88,7 +88,7 @@ ex_loggersvr_cb(struct skynet_context * ctx, void *ud, int type, int session, ui
             struct tm tm;
             localtime_r(&now, &tm);
             char timebuf[64];
-            strftime(timebuf, sizeof(timebuf), "%Y%m%d-%I:%M:%S", &tm);
+            strftime(timebuf, sizeof(timebuf), "%Y%m%d-%H:%M:%S", &tm);
 
             size_t len = fprintf(inst->f, "[:%08x][%s] ", source, timebuf);
             fwrite(msg, sz , 1, inst->f);
