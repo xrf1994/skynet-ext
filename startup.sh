@@ -41,6 +41,10 @@ function make_conf(){
   }
 
 function start(){
+    if [ -f $PID_FILE ] ;then
+        echo "$PID_FILE is running by pid:$(cat $PID_FILE)"
+        exit 0
+    fi
     case "$MODE" in
         release)
             make_conf
@@ -66,7 +70,6 @@ function stop(){
     echo "not found pid file $PID_FILE"
     exit 0
   fi
-
   pid=`cat $PID_FILE`
   exist_pid=`pgrep skynet | grep $pid`
   if [ -z "$exist_pid" ] ;then
@@ -75,6 +78,7 @@ function stop(){
   else
     echo -n $"$pid $PNAME server will killed"
     kill $pid
+    rm -rf $PID_FILE
     echo
   fi
 }
