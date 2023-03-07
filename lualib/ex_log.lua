@@ -19,7 +19,7 @@ skynet.init(function()
 end)
 
 local function color_str(color, ...)
-    local t = {color, level}
+    local t = {color}
     local args = table.pack(...)
     for i, v in ipairs(args) do
         if type(v) == "table" then
@@ -36,14 +36,20 @@ function M.debug(...)
     if _LEVEL > M.LEVEL_DEBUG then
         return
     end
-    skynet.error(color_str("\x1b[32m[DEBUG]", ...))
+    local info = debug.getinfo(2);
+    local s = string.format(
+        ":%s:%d [DEBUG]", info.short_src, info.currentline);
+    skynet.error(color_str("\x1b[32m" .. s, ...))
 end
 
 function M.trace(...)
     if _LEVEL > M.LEVEL_TRACE then
         return
     end
-    skynet.error(color_str("\x1b[32m[TRACE]", ...))
+    local info = debug.getinfo(2);
+    local s = string.format(
+        ":%s:%d [TRACE]", info.short_src, info.currentline);
+    skynet.error(color_str("\x1b[32m" .. s, ...))
 end
 
 function M.info(...)
