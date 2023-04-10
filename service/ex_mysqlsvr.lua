@@ -277,7 +277,7 @@ function CMD.query(sql)
     return NO_ERR, res
 end
 
-function CMD.select(tname, fields, where, limit)
+function CMD.select(tname, fields, where, limit, extra)
     local sql = {
         "SELECT",
         table.concat(fields, ","),
@@ -296,9 +296,12 @@ function CMD.select(tname, fields, where, limit)
         end
     end
 
-     if limit and next(limit) then
+    if limit and next(limit) then
         table.insert(sql, "LIMIT")
         table.insert(sql, table.concat(limit, ","))
+    end
+    if extra then
+        table.insert(sql, extra)
     end
 
     local sql = table.concat(sql, " ")

@@ -228,6 +228,55 @@ static int laes_gcm_decode(lua_State * L){
 
 }
 
+static int laes_gcm_decode2(lua_State * L){
+    size_t data_len;
+    const char * data = luaL_checklstring(L, 1, &data_len);
+    size_t key_len;
+    const char * key = luaL_checklstring(L, 2, &key_len);
+    size_t iv_len;
+    const char * iv = luaL_checklstring(L, 3, &iv_len);
+    size_t tag_len;
+    const char * tag = luaL_checklstring(L, 4, &tag_len);
+    size_t aad_len;
+    const char * aad = luaL_checklstring(L, 5, &aad_len);
+
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL);
+    // EVP_CIPHER_CTX_set_padding(ctx, 0);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, iv_len, NULL);
+    EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv);
+
+    int out_len;
+    // if(aad_len){
+        EVP_DecryptUpdate(ctx, NULL, &out_len, aad, aad_len);
+    // }
+    unsigned char * outbuf = malloc(data_len);
+    EVP_DecryptUpdate(ctx, outbuf, &out_len, data, data_len);
+
+    if(tag_len){
+        // Set expected tag value
+        int tag_out_len;
+        unsigned char * tagbuf = malloc(data_len);
+        memcpy(tagbuf, outbuf, out_len);
+        EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, tag);
+        int rc = EVP_CipherFinal_ex(ctx, tagbuf, &tag_out_len);
+        free(tagbuf);
+        if(!rc){
+            EVP_CIPHER_CTX_free(ctx);
+            free(outbuf);
+            return luaL_error(L, "faild verify tag");
+        }
+    }else{
+        if(out_len > 16){ //remove 16b tag
+           out_len = out_len - 16;
+        }
+    }
+    EVP_CIPHER_CTX_free(ctx);
+    lua_pushlstring(L, outbuf, out_len);
+    free(outbuf);
+    return 1;
+}
+
 static int lhash(lua_State * L){
     size_t size;
     const char * dat = luaL_checklstring(L, 1, &size);
@@ -250,6 +299,7 @@ int luaopen_lopenssl_c(lua_State *L) {
         {"rsa_sign", lrsa_sign },
         {"rsa_verify", lrsa_verify },
         {"aes_gcm_decode", laes_gcm_decode},
+        {"aes_gcm_decode2", laes_gcm_decode2},
         {"hash", lhash},
 
         {NULL, NULL}
