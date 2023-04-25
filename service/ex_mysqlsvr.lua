@@ -315,7 +315,7 @@ end
 function CMD.select_count(tname, where)
     local sql = {
         "SELECT count(*) FROM",
-        string.format("`%s`", tname),
+        string.format("%s", tname),
     }
     if where and next(where) then
         table.insert(sql, "WHERE")
