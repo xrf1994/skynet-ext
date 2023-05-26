@@ -68,19 +68,18 @@ function start(){
 function stop(){
   if [ ! -f $PID_FILE ] ;then
     echo "not found pid file $PID_FILE"
-    exit 0
+    return
   fi
   pid=`cat $PID_FILE`
   exist_pid=`pgrep skynet | grep $pid`
   if [ -z "$exist_pid" ] ;then
     echo "have no $PNAME server"
-    exit 0
-  else
-    echo -n $"$pid $PNAME server will killed"
-    kill $pid
-    rm -rf $PID_FILE
-    echo
+    return
   fi
+  echo -n $"$pid $PNAME server will killed"
+  kill $pid
+  rm -rf $PID_FILE
+  echo
 }
 
 case "$CMD" in
