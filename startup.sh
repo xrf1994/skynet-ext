@@ -53,7 +53,9 @@ function start(){
             echo $PNAME start with pid $(cat $PID_FILE)
             rm $CONF_TEMP
             LOG="log/$PNAME.log-$(date '+%Y%m%d')"
-            tail -n 50 -f $LOG
+            if [ -z "$NO_TAIL" ] ;then
+                tail -n 50 -f $LOG
+            fi
             ;;
         debug)
             make_conf

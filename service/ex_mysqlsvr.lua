@@ -361,6 +361,40 @@ function CMD.insert(tname, data, exc)
     return NO_ERR, res
 end
 
+function CMD.bat_insert(tname, keys, datas, exc)
+    local tk = {}
+    local tv = {}
+    for i, k in ipairs(keys) do
+        table.insert(tk, string.format("`%s`", k))
+    end
+    for i, v in ipairs(datas) do
+        local parts = {}
+        for i, k in ipairs(keys) do
+            table.insert(parts, QS(v[k]))
+        end
+        table.insert(tv,
+            table.concat({
+                "(", table.concat(parts, ","), ")",
+            })
+        )
+    end
+    local t = {
+        "INSERT INTO",
+        string.format("`%s`", tname),
+        "(", table.concat(tk, ","), ")",
+        "VALUES",
+        table.concat(tv, ","),
+        ";",
+        exc,
+    }
+    local sql = table.concat(t, " ")
+    local res = _db:query(sql)
+    if res.err then
+        return res.err .. sql, ex_log.error("sql err:", res.err, sql)
+    end
+    return NO_ERR, res
+end
+
 function CMD.replace(tname, data, exc)
     local tk = {}
     local tv = {}
@@ -373,11 +407,44 @@ function CMD.replace(tname, data, exc)
         string.format("`%s`", tname),
         "(", table.concat(tk, ","), ")",
         "VALUES",
-        "(", table.concat(tv, ","), ")",
+        table.concat(tv, ","),
         ";",
         exc,
     }
+    local sql = table.concat(t, " ")
+    local res = _db:query(sql)
+    if res.err then
+        return res.err .. sql, ex_log.error("sql err:", res.err, sql)
+    end
+    return NO_ERR, res
+end
 
+function CMD.bat_replace(tname, keys, datas, exc)
+    local tk = {}
+    local tv = {}
+    for i, k in ipairs(keys) do
+        table.insert(tk, string.format("`%s`", k))
+    end
+    for i, v in ipairs(datas) do
+        local parts = {}
+        for i, k in ipairs(keys) do
+            table.insert(parts, QS(v[k]))
+        end
+        table.insert(tv,
+            table.concat({
+                "(", table.concat(parts, ","), ")",
+            })
+        )
+    end
+    local t = {
+        "REPLACE INTO",
+        string.format("`%s`", tname),
+        "(", table.concat(tk, ","), ")",
+        "VALUES",
+        table.concat(tv, ","),
+        ";",
+        exc,
+    }
     local sql = table.concat(t, " ")
     local res = _db:query(sql)
     if res.err then
@@ -391,14 +458,12 @@ function CMD.update(tname, fields, where, exc)
     for k, v in pairs(fields) do
         table.insert(values, string.format("`%s`=%s", TS(k), QS(v)))
     end
-
     local sql = {
         "UPDATE",
          tname,
          "SET",
          table.concat(values, ","),
     }
-
     if where and next(where) then
         table.insert(sql, "WHERE")
         for _, v in ipairs(where) do
